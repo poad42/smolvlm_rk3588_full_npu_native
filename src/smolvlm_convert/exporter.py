@@ -7,6 +7,11 @@ from transformers import AutoModelForVision2Seq
 from rknn.api import RKNN
 from rknn_patterns import UniversalBlock
 
+try:
+    from rkllm.api import RKLLM
+except ImportError:
+    RKLLM = None
+
 # --- CONFIG ---
 DEFAULT_MODEL_ID = "HuggingFaceTB/SmolVLM-256M-Instruct"
 DEFAULT_WORK_DIR = "./smolvlm_subshards"
@@ -150,3 +155,72 @@ def export_all(model_id=DEFAULT_MODEL_ID, work_dir=DEFAULT_WORK_DIR):
             else:
                 compile_part(i, "attn", attn, use_fp16=False, work_dir=work_dir)
                 compile_part(i, "mlp", mlp, use_fp16=False, work_dir=work_dir)
+
+
+def export_rkllm(model_id=DEFAULT_MODEL_ID, work_dir=DEFAULT_WORK_DIR):
+    print("\n[3/3] Compiling LM with RKLLM...")
+
+    if RKLLM is None:
+        print("Warning: rkllm not installed. Skipping RKLLM export.")
+        return
+
+    model_path = os.path.join(work_dir, "rkllm_model")
+    if not os.path.exists(model_path):
+        os.makedirs(model_path)
+
+    llm = RKLLM()
+
+    # Load model
+    print(f"Loading model: {model_id}")
+
+    model_path_arg = model_id
+    if not os.path.exists(model_id):
+        print(
+            f"Model path '{model_id}' does not exist locally. Downloading from Hugging Face Hub..."
+        )
+        try:
+            from huggingface_hub import snapshot_download
+
+            # Download the full model to ensure we have the correct config/tokenizer for the VLM
+            model_path_arg = snapshot_download(repo_id=model_id)
+            print(f"Model downloaded to: {model_path_arg}")
+        except ImportError:
+            print(
+                "Error: huggingface_hub not installed. Please install it to download models."
+            )
+            return
+        except Exception as e:
+            print(f"Error downloading model: {e}")
+            return
+
+    # Note: RKLLM supports SmolVLM (based on Idefics3/SmolLM2).
+    # It typically converts the Language Model part into the .rkllm file.
+    # The vision encoder (SigLIP) is handled separately (which matches our split approach).
+    # We pass the full model path so RKLLM can read the correct config and tokenizer.
+    ret = llm.load_huggingface(model=model_path_arg)
+    if ret != 0:
+        print("RKLLM Load failed!")
+        return
+
+    # Build
+    print("Building RKLLM model...")
+    ret = llm.build(
+        do_quantization=True,
+        optimization_level=1,
+        quantized_dtype="w8a8",
+        target_platform="rk3588",
+        num_npu_core=3,
+    )
+    if ret != 0:
+        print("RKLLM Build failed!")
+        return
+
+    # Export
+    export_path = f"{work_dir}/smolvlm.rkllm"
+    print(f"Exporting to {export_path}...")
+    ret = llm.export_rkllm(export_path)
+    if ret != 0:
+        print("RKLLM Export failed!")
+        return
+
+    print(f"RKLLM model exported to {export_path}")

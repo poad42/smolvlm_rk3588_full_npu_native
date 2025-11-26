@@ -7,7 +7,10 @@
 */*/*.onnx
 */*/*.rknn
 */*/*.npy
-*/*/_pycache_
-*/*/_pycache_/*
+*/*/__pycache__
+*/*/__pycache__
 .venv/
 */*.txt
+*.whl
+*.rkllm
+*/*/__pycache__

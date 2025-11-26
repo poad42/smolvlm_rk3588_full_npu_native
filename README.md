@@ -62,7 +62,13 @@ This will generate `.rknn` files in `smolvlm_subshards/`.
 ### 2. Inference (On RK3588)
 Transfer the `smolvlm_subshards/` directory and the `src/` folder to your board.
 
-Install dependencies:
+**Install RKLLM Bindings:**
+This project requires custom Python bindings for RKLLM to support multimodal input.
+```bash
+pip install rkllm_bindings-0.1.0-py3-none-any.whl
+```
+
+Install other dependencies:
 ```bash
 pip install -r requirements_infer.txt
 ```

@@ -1,0 +1,5 @@
+rknnlite2
+numpy
+pillow
+transformers
+torch

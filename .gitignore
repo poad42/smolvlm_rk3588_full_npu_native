@@ -1,0 +1,13 @@
+**.onnx
+**.rknn
+**.npy
+*/*.onnx
+*/*.rknn
+*/*.npy
+*/*/*.onnx
+*/*/*.rknn
+*/*/*.npy
+*/*/_pycache_
+*/*/_pycache_/*
+.venv/
+*/*.txt

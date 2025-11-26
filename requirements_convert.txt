@@ -1,0 +1,9 @@
+torch
+transformers
+onnx
+numpy
+torch
+transformers
+onnx
+numpy
+rknn-toolkit2; python_version == "3.10"
